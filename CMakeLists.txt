@@ -1,6 +1,5 @@
 message(STATUS "CMake version: ${CMAKE_VERSION}")
-
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.7)
 
 # Determine if fmt is built as a subproject (using add_subdirectory)
 # or if it is the master project.
@@ -30,10 +29,16 @@ endif ()
 option(FMT_PEDANTIC "Enable extra warnings and expensive tests." OFF)
 
 # Options that control generation of various targets.
-option(FMT_DOC "Generate the doc target." ${MASTER_PROJECT})
-option(FMT_INSTALL "Generate the install target." ${MASTER_PROJECT})
-option(FMT_TEST "Generate the test target." ${MASTER_PROJECT})
+option(FMT_INSTALL "Generate the install target." ON)
+# option(FMT_DOC "Generate the doc target." ${MASTER_PROJECT})
+option(FMT_DOC "Generate the install target." OFF)
+# option(FMT_TEST "Generate the test target." ${MASTER_PROJECT})
+option(FMT_TEST "Generate the test target." OFF)
 option(FMT_USE_CPP11 "Enable the addition of C++11 compiler flags." ON)
+
+# AI-added stuff:
+option(BUILD_SHARED_LIBS "Build shared library instead of static." ON)
+include( BpcMakeLibrary.cmake )
 
 project(FMT)
 
@@ -49,10 +54,10 @@ math(EXPR CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_3})
 join(FMT_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.
                  ${CPACK_PACKAGE_VERSION_PATCH})
 message(STATUS "Version: ${FMT_VERSION}")
-
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+# Removed for AI as we set it in our BpcMakeLibrary
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
   "${CMAKE_CURRENT_SOURCE_DIR}/support/cmake")
