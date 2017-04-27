@@ -38,7 +38,7 @@ option(FMT_USE_CPP11 "Enable the addition of C++11 compiler flags." ON)
 
 # AI-added stuff:
 option(BUILD_SHARED_LIBS "Build shared library instead of static." ON)
-include( BpcMakeLibrary.cmake )
+include( BpcPackage.cmake )
 
 project(FMT)
 
