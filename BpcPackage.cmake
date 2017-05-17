@@ -112,4 +112,6 @@ function( BpcInstallPackage )
 		)
 		install(EXPORT ${package}.${config} ${ns} DESTINATION ${CONF_DESTINATION} CONFIGURATIONS ${config} FILE ${package}-config.cmake)
 	endforeach()
+	
+	install(DIRECTORY ${CMAKE_SOURCE_DIRS} DESTINATION "${INST_DESTINATION}/sources")
 endfunction()
