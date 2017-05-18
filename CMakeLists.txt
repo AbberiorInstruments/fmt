@@ -1,10 +1,6 @@
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 cmake_minimum_required(VERSION 3.7)
 
-# Switch on BpcPackage
-if( EXISTS "bpc-package/BpcPackage.cmake" )
-  include( "bpc-package/BpcPackage.cmake" )
-endif()
 
 # Determine if fmt is built as a subproject (using add_subdirectory)
 # or if it is the master project.
@@ -45,6 +41,11 @@ option(FMT_USE_CPP11 "Enable the addition of C++11 compiler flags." ON)
 option(BUILD_SHARED_LIBS "Build shared library instead of static." ON)
 
 project(FMT)
+
+# Switch on BpcPackage
+if( EXISTS "bpc-package/BpcPackage.cmake" )
+  include( "bpc-package/BpcPackage.cmake" )
+endif()
 
 # Starting with cmake 3.0 VERSION is part of the project command.
 file(READ fmt/format.h format_h)

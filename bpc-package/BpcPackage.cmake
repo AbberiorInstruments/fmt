@@ -1,25 +1,27 @@
 include( CMakePackageConfigHelpers )
 include( CMakeParseArguments )
-include( BpcTargetPaths.cmake )
+include( BpcSpecialDefaults.cmake )
+include( "${CMAKE_CURRENT_LIST_DIR}/BpcHelpers.cmake" )
+include( "${CMAKE_CURRENT_LIST_DIR}/BpcTargetPaths.cmake" )
+include( "${CMAKE_CURRENT_LIST_DIR}/BpcCompiler.cmake" )
 
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR NOT CMAKE_INSTALL_PREFIX)
     set (CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}-install/" CACHE PATH "CMake install Directory" FORCE )
 endif()
-set(CMAKE_CONFIGURATION_TYPES Debug RelWithDebInfo CACHE TYPE INTERNAL FORCE )
+
+message( STATUS "Install Prefix: ${CMAKE_INSTALL_PREFIX}" )
+if( WIN32 )
+	set(CMAKE_CONFIGURATION_TYPES Debug RelWithDebInfo CACHE TYPE INTERNAL FORCE )
+else()
+	set(CMAKE_BUILD_TYPE Release CACHE TYPE INTERNAL FORCE )
+endif()
 
 set( BPC_PACKAGE_FOUND True )
 
-if ( CMAKE_TOOLCHAIN_FILE )
-	get_filename_component( toolchain_file ${CMAKE_TOOLCHAIN_FILE} NAME )
-	if ( ${toolchain_file} STREQUAL "CMakeToolchainNISOM.cmake" )
-		set( BPC_TARGET_NISOM ON )
-		set( BPC_COMPILER nisom )
-	endif()
-endif()
-
 function( BpcInstallPackage )
-	
-	message( STATUS "Creating bpc package installation targets" )
+	if( NOT CMAKE_CONFIGURATION_TYPES )
+		set( CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE} )
+	endif()
 	
 	cmake_parse_arguments( "PACKAGE"
 		"ALL_COMPILERS;USE_HEADER_SUBFOLDER" "COMPATIBILITY;NAMESPACE;NAME;VERSION" "TARGETS" ${ARGN}
@@ -32,6 +34,8 @@ function( BpcInstallPackage )
 	if( NOT PACKAGE_NAME )
 		set( PACKAGE_NAME ${CMAKE_PROJECT_NAME} )
 	endif()
+		
+	message( STATUS "Creating \"${PACKAGE_NAME}\" installation for targets: ${PACKAGE_TARGETS}" )
 	
 	set( ns )
 	if( PACKAGE_NAMESPACE )
@@ -45,30 +49,10 @@ function( BpcInstallPackage )
 		message( FATAL_ERROR "Missing version argument!" )
 	endif()
 
-	if( PACKAGE_ALL_COMPILERS AND WIN32 )
-		# Version for installation to ALL_COMPIERS
-		if( CMAKE_CL_64 )
-			set( PLATFORM x64 )
-		else()
-			set( PLATFORM win32 )
-		endif()
-		
-		set( CONF_ROOT "cmake/ALL_COMPILERS/${PLATFORM}" )
+	if( PACKAGE_ALL_COMPILERS )
+		set( CONF_ROOT "cmake/ALL_COMPILERS" )
 		set( INST_ROOT "ALL_COMPILERS" )
 	else()
-		if( WIN32 )
-			# Version for compiler specific packages
-			if (CMAKE_CL_64)
-				set( BPC_COMPILER MSVC-64-14.0 )
-			else()
-				set( BPC_COMPILER MSVC-32-14.0 )
-			endif()
-		elseif( ${BPC_TARGET_NISOM} )
-			set( BPC_COMPILER NISOM )
-		else()
-			message( "Compiler toolchain not added to BpcPackage yet!" )
-			return()
-		endif()
 		set( CONF_ROOT "cmake/${BPC_COMPILER}" )
 		set( INST_ROOT ${BPC_COMPILER} )
 	endif()
@@ -102,7 +86,7 @@ function( BpcInstallPackage )
 	
 	foreach( config ${CMAKE_CONFIGURATION_TYPES} )
 		string( TOUPPER ${config} CONFIG )
-		
+
 		if( WIN32 )
 			foreach( target ${PACKAGE_TARGETS} )
 				get_target_property( type ${target} TYPE )
@@ -124,24 +108,15 @@ function( BpcInstallPackage )
 						CONFIGURATIONS ${config} )
 				endif()
 			endforeach()
-		
-			install( TARGETS ${PACKAGE_TARGETS} EXPORT ${package}.${config} CONFIGURATIONS ${config} 
-				RUNTIME DESTINATION ${INST_DESTINATION}/bin/${config}
-				LIBRARY DESTINATION ${INST_DESTINATION}/bin/${config}
-				ARCHIVE DESTINATION ${INST_DESTINATION}/lib/${config}
-				PUBLIC_HEADER DESTINATION ${INC_DESTINATION}
-				INCLUDES DESTINATION ${INST_DESTINATION}/include
-			)
-		else()
-			# For now we usually had no separate "bin" directory under Linux
-			install( TARGETS ${PACKAGE_TARGETS} EXPORT ${package}.${config} CONFIGURATIONS ${config} 
-				RUNTIME DESTINATION ${INST_DESTINATION}/lib/${config}
-				LIBRARY DESTINATION ${INST_DESTINATION}/lib/${config}
-				ARCHIVE DESTINATION ${INST_DESTINATION}/lib/${config}
-				PUBLIC_HEADER DESTINATION ${INC_DESTINATION}
-				INCLUDES DESTINATION ${INST_DESTINATION}/include
-			)
 		endif()
+		
+		install( TARGETS ${PACKAGE_TARGETS} EXPORT ${package}.${config} CONFIGURATIONS ${config} 
+			RUNTIME DESTINATION ${INST_DESTINATION}/bin/${config}
+			LIBRARY DESTINATION ${INST_DESTINATION}/bin/${config}
+			ARCHIVE DESTINATION ${INST_DESTINATION}/lib/${config}
+			PUBLIC_HEADER DESTINATION ${INC_DESTINATION}
+			INCLUDES DESTINATION ${INST_DESTINATION}/include
+		)
 		install(EXPORT ${package}.${config} ${ns} DESTINATION ${CONF_DESTINATION} CONFIGURATIONS ${config} FILE ${package}-config.cmake)
 	endforeach()
 endfunction()
