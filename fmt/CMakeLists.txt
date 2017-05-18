@@ -61,7 +61,7 @@ if ( BPC_PACKAGE_FOUND )
 elseif (FMT_INSTALL)
   include(CMakePackageConfigHelpers)
   set(FMT_CMAKE_DIR lib/cmake/fmt CACHE STRING
-     "Installation directory for cmake files, relative to ${CMAKE_INSTALL_PREFIX}.")
+    "Installation directory for cmake files, relative to ${CMAKE_INSTALL_PREFIX}.")
   set(version_config ${PROJECT_BINARY_DIR}/fmt-config-version.cmake)
   set(project_config ${PROJECT_BINARY_DIR}/fmt-config.cmake)
   set(targets_export_name fmt-targets)
@@ -76,21 +76,21 @@ elseif (FMT_INSTALL)
 
   # Generate the version, config and target files into the build directory.
   write_basic_package_version_file(
-     ${version_config}
-     VERSION ${FMT_VERSION}
-     COMPATIBILITY AnyNewerVersion)
+    ${version_config}
+    VERSION ${FMT_VERSION}
+    COMPATIBILITY AnyNewerVersion)
   configure_package_config_file(
-     ${PROJECT_SOURCE_DIR}/support/cmake/fmt-config.cmake.in
-     ${project_config}
-     INSTALL_DESTINATION ${FMT_CMAKE_DIR})
+    ${PROJECT_SOURCE_DIR}/support/cmake/fmt-config.cmake.in
+    ${project_config}
+    INSTALL_DESTINATION ${FMT_CMAKE_DIR})
   export(TARGETS ${INSTALL_TARGETS}
-          FILE ${PROJECT_BINARY_DIR}/${targets_export_name}.cmake)
+         FILE ${PROJECT_BINARY_DIR}/${targets_export_name}.cmake)
 
   # Install version, config and target files.
   install(
-     FILES ${project_config} ${version_config}
-     DESTINATION ${FMT_CMAKE_DIR})
-   install(EXPORT ${targets_export_name} DESTINATION ${FMT_CMAKE_DIR})
+    FILES ${project_config} ${version_config}
+    DESTINATION ${FMT_CMAKE_DIR})
+  install(EXPORT ${targets_export_name} DESTINATION ${FMT_CMAKE_DIR})
 
   # Install the library and headers.
   install(TARGETS ${INSTALL_TARGETS} EXPORT ${targets_export_name}
