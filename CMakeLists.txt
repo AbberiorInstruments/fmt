@@ -39,7 +39,7 @@ option(FMT_USE_CPP11 "Enable the addition of C++11 compiler flags." ON)
 project(FMT)
 
 # Switch on BpcPackage
-if( EXISTS "bpc-package/BpcPackage.cmake" )
+if( EXISTS "${CMAKE_CURRENT_LIST_DIR}/bpc-package/BpcPackage.cmake" )
   include( "bpc-package/BpcPackage.cmake" )
 endif()
 
@@ -101,7 +101,7 @@ endif ()
 if (FMT_TEST)
   enable_testing()
   add_subdirectory(test)
-endif ()
+endif()
 
 set(gitignore ${PROJECT_SOURCE_DIR}/.gitignore)
 if (MASTER_PROJECT AND EXISTS ${gitignore})

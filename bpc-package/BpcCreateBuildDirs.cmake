@@ -162,7 +162,7 @@ function( bpc_create_linux_build platform config do_build )
 			"${MY_GCC}"
 			"${MY_GXX}"
 			"${IPREFIX_ARG}"
-			"-DCMAKE_BUILD_TYPE=\"${config}\""
+			"-DCMAKE_BUILD_TYPE=${config}"
 	)
 	if( do_build )
 		message( "Executing make in ${BUILD_DIR}/${config}" )
