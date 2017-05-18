@@ -187,7 +187,7 @@ function( bpc_create_windows_build platform )
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} "${BUILD_SOURCE_DIR}" "-B${BUILD_DIR}" 
 			"${GENERATOR}" 
-			"-DCMAKE_CONFIGURATION_TYPES=\"Debug;RelWithDebInfo\""
+			"-DCMAKE_CONFIGURATION_TYPES=Debug;RelWithDebInfo"
 			"${IPREFIX_ARG}"
 	)
 endfunction()

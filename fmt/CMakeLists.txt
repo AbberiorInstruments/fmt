@@ -57,6 +57,10 @@ endif ()
 
 # Install targets.
 if ( BPC_PACKAGE_FOUND )
+  set (INSTALL_TARGETS fmt)
+  if (TARGET fmt-header-only)
+    set(INSTALL_TARGETS ${INSTALL_TARGETS} fmt-header-only)
+  endif ()
   BpcInstallPackage( NAME CppFormat VERSION ${FMT_VERSION} NAMESPACE CppFormat:: TARGETS ${INSTALL_TARGETS} USE_HEADER_SUBFOLDER )
 elseif (FMT_INSTALL)
   include(CMakePackageConfigHelpers)
