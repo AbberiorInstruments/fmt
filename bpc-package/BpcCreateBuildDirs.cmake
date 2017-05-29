@@ -44,7 +44,8 @@ function( bpc_build )
 			if( CMAKE_HOST_UNIX )
 				set( BUILD_INSTALL_PREFIX "$ENV{HOME}/Libraries" )
 			else()
-				set( BUILD_INSTALL_PREFIX "${BUILD_SOURCE_DIR}-install" )
+				get_filename_component( WORKINGCOPY_DIR ${CMAKE_CURRENT_LIST_DIR} DIRECTORY )
+				set( BUILD_INSTALL_PREFIX "${WORKINGCOPY_DIR}-install" )
 			endif()
 		endif()
 	else()
@@ -117,20 +118,9 @@ function( bpc_build )
 		message( STATUS "Building platform ${BUILD_PLATFORM}:" )
 		message( STATUS "Building into:  ${BUILD_DIR}" )
 		
-<<<<<<< HEAD
 		set( INSTALL_DIR "${BUILD_INSTALL_PREFIX}/${BPC_COMPILER}" )
-		message( STATUS "Building into: ${INSTALL_DIR}" )
+		message( STATUS "Installing into: ${INSTALL_DIR}" )
 		set( IPREFIX_ARG "-DCMAKE_INSTALL_PREFIX=${BUILD_INSTALL_PREFIX}" )	
-=======
-		if( BUILD_SET_IPREFIX )
-			set( INSTALL_DIR "${BUILD_INSTALL_ROOT}/${BPC_COMPILER}" )
-			message( STATUS "Building into: ${INSTALL_DIR}" )
-			set( IPREFIX_ARG "-DCMAKE_INSTALL_PREFIX=${BUILD_INSTALL_ROOT}" )
-		else()
-			set( IPREFIX_ARG "-DXYZ_DUMMY=h")
-		endif()
-			
->>>>>>> ai-master-3.0.2
 		
 		if( NOT BUILD_KEEP_CACHE )
 			message( STATUS "Removing cache" )
@@ -143,7 +133,6 @@ function( bpc_build )
 		if( BPC_TARGET_NISOM )
 			message( STATUS "Targeting NISOM platform." )
 			
-<<<<<<< HEAD
 			if( NOT BUILD_CONFIGURATIONS )
 				set( BUILD_CONFIGURATIONS "Debug;RelWithDebInfo" )
 			endif()
@@ -164,17 +153,6 @@ function( bpc_build )
 					file( APPEND ${batfile} "jom ${target}\n" )
 				endif()
 			endforeach()
-=======
-			if( BUILD_RUN_CMAKE )
-				bpc_create_nisom_build( "Debug" )
-				bpc_create_nisom_build( "RelWithDebInfo" )
-			endif()
-			
-			file( APPEND ${batfile} "cd /D \"${nbuild_dir}\\Debug\"\n" )
-			file( APPEND ${batfile} "jom install\n" )
-			file( APPEND ${batfile} "cd /D \"${nbuild_dir}\\RelWithDebInfo\"\n" )
-			file( APPEND ${batfile} "jom install\n" )
->>>>>>> ai-master-3.0.2
 			
 		elseif( BPC_TARGET_LINUX )
 			if( NOT BUILD_CONFIGURATIONS )
@@ -218,15 +196,17 @@ function( bpc_build )
 	endforeach()
 	
 	if( NOT CMAKE_HOST_UNIX AND NOT BUILD_NOBUILD )
-		message( STATUS "Executing build script: ${batfile}" )
+		file( TO_NATIVE_PATH ${batfile} batfile_native )
+		message( STATUS "Executing build script: ${batfile_native}" )
 		execute_process(
-			COMMAND "cmd.exe" "/c" "start" "cmd" "/k" "${batfile}"
+			COMMAND "cmd.exe" "/c" "start" "cmd" "/k" "${batfile_native}"
 		)
 	endif()
 endfunction()
 
 function( bpc_create_nisom_build config )
-	foreach( dir "${BUILD_SOURCE_DIR}/CMakeModules/toolchains" "${BUILD_SOURCE_DIR}/bpc-package" )
+
+	foreach( dir "${BUILD_SOURCE_DIR}/../../CMakeModules/toolchains" "${BUILD_SOURCE_DIR}/CMakeModules/toolchains" "${BUILD_SOURCE_DIR}/bpc-package" )
 		if( EXISTS "${dir}/CMakeToolchainNISOM.cmake" )
 			set( TOOLCHAIN_FILE "${dir}/CMakeToolchainNISOM.cmake" )
 			break()
