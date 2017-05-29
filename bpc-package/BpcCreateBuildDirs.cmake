@@ -117,9 +117,20 @@ function( bpc_build )
 		message( STATUS "Building platform ${BUILD_PLATFORM}:" )
 		message( STATUS "Building into:  ${BUILD_DIR}" )
 		
+<<<<<<< HEAD
 		set( INSTALL_DIR "${BUILD_INSTALL_PREFIX}/${BPC_COMPILER}" )
 		message( STATUS "Building into: ${INSTALL_DIR}" )
 		set( IPREFIX_ARG "-DCMAKE_INSTALL_PREFIX=${BUILD_INSTALL_PREFIX}" )	
+=======
+		if( BUILD_SET_IPREFIX )
+			set( INSTALL_DIR "${BUILD_INSTALL_ROOT}/${BPC_COMPILER}" )
+			message( STATUS "Building into: ${INSTALL_DIR}" )
+			set( IPREFIX_ARG "-DCMAKE_INSTALL_PREFIX=${BUILD_INSTALL_ROOT}" )
+		else()
+			set( IPREFIX_ARG "-DXYZ_DUMMY=h")
+		endif()
+			
+>>>>>>> ai-master-3.0.2
 		
 		if( NOT BUILD_KEEP_CACHE )
 			message( STATUS "Removing cache" )
@@ -132,6 +143,7 @@ function( bpc_build )
 		if( BPC_TARGET_NISOM )
 			message( STATUS "Targeting NISOM platform." )
 			
+<<<<<<< HEAD
 			if( NOT BUILD_CONFIGURATIONS )
 				set( BUILD_CONFIGURATIONS "Debug;RelWithDebInfo" )
 			endif()
@@ -152,6 +164,17 @@ function( bpc_build )
 					file( APPEND ${batfile} "jom ${target}\n" )
 				endif()
 			endforeach()
+=======
+			if( BUILD_RUN_CMAKE )
+				bpc_create_nisom_build( "Debug" )
+				bpc_create_nisom_build( "RelWithDebInfo" )
+			endif()
+			
+			file( APPEND ${batfile} "cd /D \"${nbuild_dir}\\Debug\"\n" )
+			file( APPEND ${batfile} "jom install\n" )
+			file( APPEND ${batfile} "cd /D \"${nbuild_dir}\\RelWithDebInfo\"\n" )
+			file( APPEND ${batfile} "jom install\n" )
+>>>>>>> ai-master-3.0.2
 			
 		elseif( BPC_TARGET_LINUX )
 			if( NOT BUILD_CONFIGURATIONS )
