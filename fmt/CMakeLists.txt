@@ -30,7 +30,7 @@ target_include_directories(fmt PUBLIC
 
 #set_target_properties(fmt PROPERTIES
 #  VERSION ${FMT_VERSION} SOVERSION ${CPACK_PACKAGE_VERSION_MAJOR})
-set_target_properties(fmt PROPERTIES VERSION ${FMT_VERSION}
+set_target_properties( fmt PROPERTIES VERSION ${FMT_VERSION} )
 
 set_target_properties(fmt PROPERTIES PUBLIC_HEADER "${FMT_HEADERS}")
   
