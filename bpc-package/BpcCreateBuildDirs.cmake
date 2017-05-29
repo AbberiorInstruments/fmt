@@ -2,56 +2,102 @@ set( MSBUILD_CMD "C:\\Program Files (x86)\\MSBuild\\14.0\\Bin\\MSBuild.exe" )
 
 function( bpc_build )
 	
+	# Platforms that can be built on windows
+	set( KNOWN_PLATFORMS_WINDOWS
+		"MSVC-64-14.0"
+		"MSVC-32-14.0"
+		"NISOM"
+	)
+	
+	set( KNOWN_PLATFORMS_LINUX
+		"GNU-64-Linux-4.7.4"
+	)
+	
 	if( CMAKE_HOST_UNIX )
 		message( "Cmake is running on linux!" )
 		set( IS_LINUX_HOSTED True )
 	endif()
 	
 	if( ARGN )
-		cmake_parse_arguments( "BUILD" "KEEP_CACHE;RUN_CMAKE;SET_IPREFIX" "BUILD_ROOT;INSTALL_ROOT;SOURCE_DIR;PLATFORMS" "" ${ARGN} )
+		cmake_parse_arguments( "BUILD" "KEEP_CACHE;RUN_CMAKE;NOBUILD" "BUILD_PREFIX;INSTALL_PREFIX;SOURCE_DIR;TARGET" "PLATFORMS;CONFIGURATIONS" ${ARGN} )
 	endif()
 	
 	if( NOT BUILD_SOURCE_DIR )
 		get_filename_component( BUILD_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR} DIRECTORY )
+	else()
+		file( TO_CMAKE_PATH ${BUILD_SOURCE_DIR} BUILD_SOURCE_DIR)
 	endif()
 
-	if( NOT BUILD_INSTALL_ROOT )
-		if( CMAKE_HOST_UNIX )
-			set( BUILD_INSTALL_ROOT "$ENV{HOME}/Libraries" )
-		else()
-			set( BUILD_INSTALL_ROOT "${BUILD_SOURCE_DIR}-install" )
-		endif()
+	set( DEFAULTS_FILE "${BUILD_SOURCE_DIR}/BpcPackageDefaults.cmake" )
+
+	if( EXISTS "${DEFAULTS_FILE}" )
+		message( STATUS "Reading package defaults from: ${DEFAULTS_FILE}" )
+		include( "${DEFAULTS_FILE}" )
+	else()
+		message( STATUS "No package defaults file found at: ${DEFAULTS_FILE}" )
 	endif()
 	
-	if( NOT BUILD_BUILD_ROOT)
-		if( CMAKE_HOST_UNIX )
-			get_filename_component( sourcedir_name ${BUILD_SOURCE_DIR} NAME )
-			set( BUILD_BUILD_ROOT "$ENV{HOME}/Build/${sourcedir_name}" )
+	if( NOT BUILD_INSTALL_PREFIX )
+		if( BPC_INSTALL_PREFIX )
+			set( BUILD_INSTALL_PREFIX ${BPC_INSTALL_PREFIX} )
 		else()
-			set( BUILD_BUILD_ROOT "${BUILD_SOURCE_DIR}-build" )
+			if( CMAKE_HOST_UNIX )
+				set( BUILD_INSTALL_PREFIX "$ENV{HOME}/Libraries" )
+			else()
+				get_filename_component( WORKINGCOPY_DIR ${CMAKE_CURRENT_LIST_DIR} DIRECTORY )
+				set( BUILD_INSTALL_PREFIX "${WORKINGCOPY_DIR}-install" )
+			endif()
 		endif()
 	else()
-		if( ${BUILD_BUILD_ROOT} MATCHES "^${BUILD_SOURCE_DIR}.*" )
-			message( FATAL_ERROR "Will not build inside source tree! Please call the script from the intended build root." )
+		file( TO_CMAKE_PATH ${BUILD_INSTALL_PREFIX} BUILD_INSTALL_PREFIX)
+	endif()
+	
+	if( NOT BUILD_BUILD_PREFIX)
+		if( CMAKE_HOST_UNIX )
+			get_filename_component( sourcedir_name ${BUILD_SOURCE_DIR} NAME )
+			set( BUILD_BUILD_PREFIX "$ENV{HOME}/Build/${sourcedir_name}" )
+		else()
+			set( BUILD_BUILD_PREFIX "${BUILD_SOURCE_DIR}-build" )
+		endif()
+	else()
+		file( TO_CMAKE_PATH ${BUILD_BUILD_PREFIX} BUILD_BUILD_PREFIX)
+		
+		if( ${BUILD_BUILD_PREFIX} MATCHES "^${BUILD_SOURCE_DIR}(/|$).*" )
+			message( STATUS "Build Root: ${BUILD_BUILD_PREFIX}" )
+			message( STATUS "Source Dir: ${BUILD_SOURCE_DIR}" )
+			message( FATAL_ERROR "Will not build inside source tree. build.sh or build.bat should be called from the intended BUILD_PREFIX directory!" )
 		endif()
 	endif()
 		
 	if( NOT BUILD_PLATFORMS )
 		if( CMAKE_HOST_UNIX )
-			# Default is gcc 4.7.4 at the moment
-			set( BUILD_PLATFORMS "GNU-32-Linux-4.7.4" )
-		elseif( WIN32 )
-			set( BUILD_PLATFORMS "MSVC-64-14.0;MSVC-32-14.0" )
+			set( KNOWN_PLATFORMS ${KNOWN_PLATFORMS_LINUX} )
 		else()
-			message( FATAL_ERROR "Cannot auto-set build platform!" )
+			set( KNOWN_PLATFORMS ${KNOWN_PLATFORMS_WINDOWS} )
+		endif()
+		set( BUILD_PLATFORMS )
+		if( BPC_PACKAGE_PLATFORMS )
+			foreach( p ${BPC_PACKAGE_PLATFORMS} )
+				list( FIND KNOWN_PLATFORMS ${p} _idx )
+				if( "${_idx}" GREATER "-1" )
+					list( APPEND BUILD_PLATFORMS "${p}" )
+				endif()
+			endforeach()
+		else()
+			set( BUILD_PLATFORMS ${KNOWN_PLATFORMS} )
 		endif()
 	endif()
 	
+	if( NOT BUILD_PLATFORMS )
+		message( FATAL_ERROR "No valid platforms to build package for!" )
+	endif()
+	
 	message( STATUS "Building from sources at ${BUILD_SOURCE_DIR}" )
+	message( STATUS "Building platforms: ${BUILD_PLATFORMS}" )
 	# Call batfile instead of msbuild directly for color output
 	
 	if( NOT CMAKE_HOST_UNIX )
-		set( batfile "${BUILD_BUILD_ROOT}/build_for_cmake.bat" )
+		set( batfile "${BUILD_BUILD_PREFIX}/build_for_cmake.bat" )
 		message( STATUS "Writing build batch file: ${batfile}" )
 		file( WRITE ${batfile} "" )
 	endif()
@@ -66,20 +112,15 @@ function( bpc_build )
 		endif()
 		
 		set( BPC_COMPILER ${BUILD_PLATFORM} )
-		set( BUILD_DIR "${BUILD_BUILD_ROOT}/${BPC_COMPILER}" )
+		set( BUILD_DIR "${BUILD_BUILD_PREFIX}/${BPC_COMPILER}" )
 		
 		message( STATUS "" )
 		message( STATUS "Building platform ${BUILD_PLATFORM}:" )
 		message( STATUS "Building into:  ${BUILD_DIR}" )
 		
-		if( BUILD_SET_IPREFIX )
-			set( INSTALL_DIR "${BUILD_INSTALL_ROOT}/${BPC_COMPILER}" )
-			message( STATUS "Building into: ${INSTALL_DIR}" )
-			set( IPREFIX_ARG "-DCMAKE_INSTALL_PREFIX=${BUILD_INSTALL_ROOT}" )
-		else()
-			set( IPREFIX_ARG "-DXYZ_DUMMY=h")
-		endif()
-			
+		set( INSTALL_DIR "${BUILD_INSTALL_PREFIX}/${BPC_COMPILER}" )
+		message( STATUS "Installing into: ${INSTALL_DIR}" )
+		set( IPREFIX_ARG "-DCMAKE_INSTALL_PREFIX=${BUILD_INSTALL_PREFIX}" )	
 		
 		if( NOT BUILD_KEEP_CACHE )
 			message( STATUS "Removing cache" )
@@ -92,42 +133,80 @@ function( bpc_build )
 		if( BPC_TARGET_NISOM )
 			message( STATUS "Targeting NISOM platform." )
 			
-			if( BUILD_RUN_CMAKE )
-				bpc_create_nisom_build( "Debug" )
-				bpc_create_nisom_build( "RelWithDebInfo" )
+			if( NOT BUILD_CONFIGURATIONS )
+				set( BUILD_CONFIGURATIONS "Debug;RelWithDebInfo" )
 			endif()
 			
-			file( APPEND ${batfile} "cd /D \"${nbuild_dir}\\Debug\"\n" )
-			file( APPEND ${batfile} "jom install\n" )
-			file( APPEND ${batfile} "cd /D \"${nbuild_dir}\\RelWithDebInfo\"\n" )
-			file( APPEND ${batfile} "jom install\n" )
+			if( NOT BUILD_TARGET )
+				set( target "install" )
+			else()
+				set( target ${BUILD_TARGET} )
+			endif()
+		
+			foreach( config ${BUILD_CONFIGURATIONS} )
+				if( BUILD_RUN_CMAKE )
+					bpc_create_nisom_build( ${config} )
+				endif()
+			
+				if( NOT BUILD_NOBUILD )
+					file( APPEND ${batfile} "cd /D \"${nbuild_dir}\\${config}\"\n" )
+					file( APPEND ${batfile} "jom ${target}\n" )
+				endif()
+			endforeach()
 			
 		elseif( BPC_TARGET_LINUX )
+			if( NOT BUILD_CONFIGURATIONS )
+				set( BUILD_CONFIGURATIONS "Release" )
+			endif()
+			
+			if( NOT BUILD_TARGET )
+				set( target "install" )
+			else()
+				set( target ${BUILD_TARGET} )
+			endif()
+		
 			if( BUILD_RUN_CMAKE )
-				bpc_create_linux_build( ${BUILD_PLATFORM} "Release" True )
+				foreach( config ${BUILD_CONFIGURATIONS} )
+					bpc_create_linux_build( ${BUILD_PLATFORM} ${config} ${BUILD_NOBUILD} ${target} )
+				endforeach()
 			endif()
 		else()
 			message( STATUS "Targeting Windows platform." )
-				
+
+			if( NOT BUILD_CONFIGURATIONS )
+				set( BUILD_CONFIGURATIONS "Debug;RelWithDebInfo" )
+			endif()
+			
 			if( BUILD_RUN_CMAKE )
 				bpc_create_windows_build( ${BUILD_PLATFORM} )
 			endif()
 			
-			file( APPEND ${batfile} "\"${MSBUILD_CMD}\" \"${BUILD_DIR}\\INSTALL.vcxproj\" /p:Configuration=Debug\n" )
-			file( APPEND ${batfile} "\"${MSBUILD_CMD}\" \"${BUILD_DIR}\\INSTALL.vcxproj\" /p:Configuration=RelWithDebInfo\n" )
+			if( NOT BUILD_TARGET )
+				set( target "INSTALL" )
+			else()
+				set( target ${BUILD_TARGET} )
+			endif()
+			
+			if( NOT BUILD_NOBUILD )
+				foreach( config ${BUILD_CONFIGURATIONS} )
+					file( APPEND ${batfile} "\"${MSBUILD_CMD}\" \"${BUILD_DIR}\\${target}.vcxproj\" /p:Configuration=${config}\n" )
+				endforeach()
+			endif()
 		endif()
 	endforeach()
 	
-	if( NOT CMAKE_HOST_UNIX )
-		message( STATUS "Executing build script: ${batfile}" )
+	if( NOT CMAKE_HOST_UNIX AND NOT BUILD_NOBUILD )
+		file( TO_NATIVE_PATH ${batfile} batfile_native )
+		message( STATUS "Executing build script: ${batfile_native}" )
 		execute_process(
-			COMMAND "cmd.exe" "/c" "start" "cmd" "/k" "${batfile}"
+			COMMAND "cmd.exe" "/c" "start" "cmd" "/k" "${batfile_native}"
 		)
 	endif()
 endfunction()
 
 function( bpc_create_nisom_build config )
-	foreach( dir "${BUILD_SOURCE_DIR}/CMakeModules/toolchains" "${BUILD_SOURCE_DIR}/bpc-package" )
+
+	foreach( dir "${BUILD_SOURCE_DIR}/../../CMakeModules/toolchains" "${BUILD_SOURCE_DIR}/CMakeModules/toolchains" "${BUILD_SOURCE_DIR}/bpc-package" )
 		if( EXISTS "${dir}/CMakeToolchainNISOM.cmake" )
 			set( TOOLCHAIN_FILE "${dir}/CMakeToolchainNISOM.cmake" )
 			break()
@@ -148,7 +227,7 @@ function( bpc_create_nisom_build config )
 	)
 endfunction()
 
-function( bpc_create_linux_build platform config do_build )
+function( bpc_create_linux_build platform config nobuild target )
 	# Ignore platform for now
 	set( MY_GCC "-DCMAKE_C_COMPILER:STRING=gcc-4.7" )
 	set( MY_GXX "-DCMAKE_CXX_COMPILER=g++-4.7" )
@@ -161,10 +240,10 @@ function( bpc_create_linux_build platform config do_build )
 			"${IPREFIX_ARG}"
 			"-DCMAKE_BUILD_TYPE=${config}"
 	)
-	if( do_build )
+	if( NOT nobuild )
 		message( "Executing make in ${BUILD_DIR}/${config}" )
 		execute_process(
-			COMMAND "make" "-j" "4" "install" 
+			COMMAND "make" "-j" "4" "${target}" 
 			WORKING_DIRECTORY "${BUILD_DIR}/${config}"
 		)
 	endif()

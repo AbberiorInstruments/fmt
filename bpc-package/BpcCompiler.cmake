@@ -16,17 +16,30 @@ if ( CMAKE_TOOLCHAIN_FILE )
 		endif()
 		
 		set( BPC_COMPILER nisom )
-			
+		set( BPC_NISOM_FLAGS " -march=armv7-a -mtune=cortex-a9 -mfpu=vfpv3 -mfloat-abi=softfp -Wall -Wno-psabi" )
+		
+		if( BPC_ADD_CWD_TO_RPATH )
+			string( APPEND BPC_NISOM_FLAGS " -Wl,-rpath=\".\"" )
+		endif()
+		
 		# Compiler flags for the NI-SOM platform
-		set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=armv7-a -mtune=cortex-a9 -mfpu=vfpv3 -mfloat-abi=softfp -Wall -Wno-psabi" )
-		set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a -mtune=cortex-a9 -mfpu=vfpv3 -mfloat-abi=softfp -Wall -Wno-psabi -std=c++11" )
-		set( CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -march=armv7-a -mtune=cortex-a9 -mfpu=vfpv3 -mfloat-abi=softfp -Wall -Wno-psabi" )
-		set( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -march=armv7-a -mtune=cortex-a9 -mfpu=vfpv3 -mfloat-abi=softfp -Wall -Wno-psabi -std=c++11" )
-
+		string( APPEND CMAKE_C_FLAGS "${BPC_NISOM_FLAGS}" )
+		string( APPEND CMAKE_CXX_FLAGS "${BPC_NISOM_FLAGS} -std=c++11" )
+		
 		add_definitions(-DTARGET_NISOM)
 		
 		# Needed for the NISOM platform for some reason. 
 		set( THREADS_PTHREAD_ARG "-pthread" )
+		set( BPC_ARCHITECTURE "NISOM" )
+		
+		# Exclude from packaging as they are always on the sytem and just added to LIBRARIES for cross-compiling
+		# Exclude all libraries that are part of the 
+		set( BPC_NISOM_INSTALL_EXCLUDE_PATTERNS
+			".*Zlib.*"
+			".*LibTIFF.*"
+		)
+	else()
+		message( FATAL_ERROR "Unsupported toolchain file." )
 	endif()
 elseif( UNIX )
 	set( BPC_COMPILER ${CMAKE_CXX_COMPILER_ID} )
@@ -46,6 +59,12 @@ elseif( UNIX )
 	endif()
 
 	set( CMAKE_POSITION_INDEPENDENT_CODE TRUE )
+	
+	if( CMAKE_SIZEOF_VOID_P EQUAL 4 )
+		set( BPC_ARCHITECTURE "GNU-Linux-32" )
+	elseif( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+		set( BPC_ARCHITECTURE "GNU-Linux-64" )
+	endif()
 elseif( WIN32 )
 	if( BPC_AI_BRANDING )
 		add_definitions( -D_AI_BRANDING )
