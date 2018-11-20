@@ -239,6 +239,7 @@ if (FMT_INSTALL)
   # Install the library and headers.
   install(TARGETS ${INSTALL_TARGETS} EXPORT ${targets_export_name}
           DESTINATION ${FMT_LIB_DIR})
+  install(FILES $<TARGET_PDB_FILE:fmt> DESTINATION ${FMT_LIB_DIR} OPTIONAL)
   install(FILES ${FMT_HEADERS} DESTINATION ${FMT_INC_DIR})
 endif ()
 
